@@ -105,7 +105,7 @@ var app = require("http")
     } else if (req.url.match(/^\/([A-Za-z0-9]{16})/)) {
       var route = req.url.slice(1);
       pool
-        .query(`SELECT * FROM Documents WHERE route = '${route}';`)
+        .query("SELECT * FROM Documents WHERE route = $1;", [route])
         .then((result) => {
 
           var body, message;
