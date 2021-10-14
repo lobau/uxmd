@@ -1,0 +1,94 @@
+.cm-s-uxmap span.cm-meta {
+  color: olive;
+}
+.cm-s-uxmap span.cm-number {
+  color: #00f;
+}
+.cm-s-uxmap span.cm-keyword {
+  line-height: 1em;
+  font-weight: 700;
+  color: navy;
+}
+.cm-s-uxmap span.cm-atom {
+  font-weight: 700;
+  color: navy;
+}
+.cm-s-uxmap span.cm-def {
+  color: gray;
+}
+.cm-s-uxmap span.cm-variable {
+  color: gray;
+}
+.cm-s-uxmap span.cm-variable-2 {
+  color: gray;
+}
+.cm-s-uxmap span.cm-type,
+.cm-s-uxmap span.cm-variable-3 {
+  color: gray;
+}
+.cm-s-uxmap span.cm-property {
+  color: gray;
+}
+.cm-s-uxmap span.cm-operator {
+  color: gray;
+}
+.cm-s-uxmap span.cm-comment {
+  color: grey;
+}
+.cm-s-uxmap span.cm-string {
+  color: sienna;
+}
+.cm-s-uxmap span.cm-string-2 {
+  color: sienna;
+}
+.cm-s-uxmap span.cm-header {
+    color: SlateBlue;
+  }
+.cm-s-uxmap span.cm-qualifier {
+  color: #555;
+}
+.cm-s-uxmap span.cm-error {
+  color: red;
+}
+.cm-s-uxmap span.cm-attribute {
+  color: #00f;
+}
+.cm-s-uxmap span.cm-tag {
+  color: navy;
+}
+.cm-s-uxmap span.cm-link {
+  color: #000;
+  background-color: moccasin;
+  text-decoration: none;
+}
+.cm-s-uxmap .CodeMirror-activeline-background {
+  background: #fffae3;
+}
+.cm-s-uxmap span.cm-builtin {
+  color: #30a;
+}
+.cm-s-uxmap span.cm-bracket {
+  color: #cc7;
+}
+.cm-s-uxmap {
+    line-height: 1.5;
+    background-color: #fafafa;
+    /* background-image: linear-gradient(#f0f0f0 1px, transparent 1px, transparent);
+    background-position: top left;
+    background-size: 1.5rem 1.5rem; */
+    padding-right: 1rem;
+  /* font-family: monospace; */
+}
+.cm-s-uxmap .CodeMirror-matchingbracket {
+  outline: 1px solid grey;
+  color: #444 !important;
+}
+.CodeMirror-hints.uxmap {
+  /* font-family: monospace; */
+  color: #616569;
+  background-color: #ebf3fd !important;
+}
+.CodeMirror-hints.uxmap .CodeMirror-hint-active {
+  background-color: #a2b8c9 !important;
+  color: #5c6065 !important;
+}

@@ -1,0 +1,30 @@
+{
+  "name": "uxmap",
+  "version": "1.0.0",
+  "description": "Markdown based UX mapping tool",
+  "main": "index.js",
+  "scripts": {
+    "start": "node main.js",
+    "dev": "nodemon main.js -e js,md,css"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/lobau/uxmap.git"
+  },
+  "author": "Laurent Baumann",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/lobau/uxmap/issues"
+  },
+  "homepage": "https://github.com/lobau/uxmap#readme",
+  "dependencies": {
+    "codemirror": "^5.63.1",
+    "dotenv": "^10.0.0",
+    "fs": "0.0.1-security",
+    "http": "0.0.1-security",
+    "marked": "^3.0.4",
+    "nodemon": "^2.0.13",
+    "pg": "^8.7.1",
+    "socket.io": "^4.2.0"
+  }
+}
