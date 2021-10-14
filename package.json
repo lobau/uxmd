@@ -1,7 +1,7 @@
 {
   "name": "uxmap",
   "version": "1.0.0",
-  "description": "Markdown based UX mapping tool",
+  "description": "Collaborative markdown for designing state flows",
   "main": "index.js",
   "scripts": {
     "start": "node main.js",
@@ -9,14 +9,14 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/lobau/uxmap.git"
+    "url": "git+https://github.com/lobau/uxmd.git"
   },
   "author": "Laurent Baumann",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/lobau/uxmap/issues"
+    "url": "https://github.com/lobau/uxmd/issues"
   },
-  "homepage": "https://github.com/lobau/uxmap#readme",
+  "homepage": "https://github.com/lobau/uxmd#readme",
   "dependencies": {
     "codemirror": "^5.63.1",
     "dotenv": "^10.0.0",
