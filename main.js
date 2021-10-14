@@ -20,7 +20,6 @@ const pool = new Pool({
   },
 });
 
-
 const generateUnique = (length = 24) => {
   let chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
   let str = "";
@@ -31,8 +30,7 @@ const generateUnique = (length = 24) => {
 };
 
 const save = (route) => {
-
-  pool.query(`UPDATE Documents SET body = '${db[route]}' where route = '${route}';`)
+  pool.query("UPDATE Documents SET body = $1 where route = $2;", [db[route], route])
         .then(() => {
           console.log("Row updated successfully");
         })
