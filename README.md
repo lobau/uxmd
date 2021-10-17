@@ -36,29 +36,37 @@ To link states, just name a state, and in a button of another state, write the s
 ```
 
 # Installing and running
-Create a .env file containing postgresql credential
+You'll need to install postgres.
+
+After you have it installed, create a .env file containing postgresql credential
 ```
-PG_USER=postgres_user
-PG_PASSWORD=postgres_password
-PG_HOST=postgres_host
+PG_USER=uxmd
+PG_PASSWORD=1u2x3m4d5
+PG_HOST=localhost
 PG_PORT=5432
-PG_DATABASE=database_name
-NODE_ENV=development
+PG_DATABASE=uxmd
 ```
 
-Connect to your PostgreSQL database and create the Documents table
+Connect to your PostgreSQL database. If you need to set up your user:
+```psql
+CREATE USER uxmd PASSWORD '1u2x3m4d5';
+CREATE DATABASE uxmd;
+GRANT ALL ON DATABASE uxmd TO uxmd;
+```
+
+Create the Documents table
 ```
 CREATE TABLE Documents(id SERIAL PRIMARY KEY, route VARCHAR, body VARCHAR);
 ```
 
 Install all the dependencies using
 ```
-npm install
+yarn install
 ```
 
 Then you can run the local dev server using
 ```
-npm run dev
+yarn dev
 ```
 
 It will use nodemon, which autoreload the server when you save changes to files (it will not reload the page tho)

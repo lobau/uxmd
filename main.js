@@ -1,6 +1,5 @@
 const fs = require("fs");
 const path = require("path");
-const { Pool } = require("pg");
 require("dotenv").config();
 
 const render_route = require("./render_route.js");
@@ -10,15 +9,8 @@ const create_page = require("./create_page.js");
 var db = {};
 var autosave = {};
 
-const isProduction = process.env.NODE_ENV === "production";
-const connectionString = `postgresql://${process.env.PG_USER}:${process.env.PG_PASSWORD}@${process.env.PG_HOST}:${process.env.PG_PORT}/${process.env.PG_DATABASE}`;
-
-const pool = new Pool({
-  connectionString: isProduction ? process.env.DATABASE_URL : connectionString,
-  ssl: {
-      rejectUnauthorized: false,
-  },
-});
+const initPgPool = require("./lib/pg.js")
+const pool = initPgPool()
 
 const generateUnique = (length = 24) => {
   let chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
