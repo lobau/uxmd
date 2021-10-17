@@ -1,16 +1,22 @@
 const fs = require("fs");
 const path = require("path");
+const querystring = require("querystring")
 require("dotenv").config();
 
 const render_route = require("./render_route.js");
 const error_page = require("./error_page.js");
 const create_page = require("./create_page.js");
+const landing = require("./landing.js");
 
-var db = {};
-var autosave = {};
+const db = {};
+const autosave = {};
+const githubStateStrings = {};
+
 
 const initPgPool = require("./lib/pg.js")
+const HttpClient = require("./lib/http_client.js")
 const pool = initPgPool()
+const githubClient = new HttpClient("https://github.com")
 
 const generateUnique = (length = 24) => {
   let chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
@@ -30,12 +36,12 @@ const save = (route) => {
 };
 
 var app = require("http")
-  .createServer(function (req, res) {
-    if (req.url === "/") {
+  .createServer(async function (req, res) {
+    if (req.url === "/create") {
       let route = generateUnique();
       pool
         .query(
-          `INSERT INTO Documents(route,body) Values('${route}','/root\n# Hello\nThis is the first state\n[Go to next state](#next)\n\n/next\n# Next state\nThis is the next state!\n[Back](#root)');`
+          `INSERT INTO Documents(route,body) VALUES('${route}','/root\n# Hello\nThis is the first state\n[Go to next state](#next)\n\n/next\n# Next state\nThis is the next state!\n[Back](#root)');`
         )
         .then(() => {
           create_page(route).then(
@@ -46,20 +52,49 @@ var app = require("http")
             }.bind(res));
         })
         .catch((e) => console.error(e.stack));
+    } else if(req.url === "/") {
+      /* state for OAuth, see https://docs.github.com/en/developers/apps/building-oauth-apps/authorizing-oauth-apps*/
+      const state = generateUnique()
+      githubStateStrings[state] = true
+      setTimeout(() => (delete githubStateStrings[state]), 1800000)
+      landing(state).then(
+        function (html) {
+          res.writeHead(200, { "Content-Type": "text/html" });
+          res.write(html);
+          res.end();
+        }.bind(res));
+    } else if(req.url.includes("/github_auth?")) {
+      const params = querystring.parse(req.url.split("/github_auth?")[1])
+      // github state didn't work for us
+      // if(!githubStateStrings[params.state]) {
+      //   return error_page(400).then(
+      //     function (html) {
+      //       res.writeHead(400, { "Content-Type": "text/html" });
+      //       res.write(html);
+      //       res.end();
+      //     }.bind(res));
+      // }
+      const code = params.code
+      console.log(params)
+      const result = await githubClient.getJson("/login/oauth/access_token", {
+        code,
+        client_id: process.env.GITHUB_CLIENT_ID,
+        client_secret: process.env.GITHUB_CLIENT_SECRET
+      })
+
+      // console.log("=====================")
+      // console.log(result)
+      // console.log("=====================")
+
+      res.writeHead(200, { "Content-Type": "text/html" });
+      res.write("It worked.");
+      res.end();
     } else if (req.url.match("public/stolen_victory_duospace_regular.ttf")) {
       var fileStream = fs.createReadStream(path.join(__dirname + "/public/stolen_victory_duospace_regular.ttf"));
       res.writeHead(200, { "Content-Type": "application/x-font-ttf" });
       fileStream.pipe(res);
     } else if (req.url.match("public/stolen_victory_duospace_bold.ttf")) {
       var fileStream = fs.createReadStream(path.join(__dirname + "/public/stolen_victory_duospace_bold.ttf"));
-      res.writeHead(200, { "Content-Type": "application/x-font-ttf" });
-      fileStream.pipe(res);
-    } else if (req.url.match("public/noway_round_regular.otf")) {
-      var fileStream = fs.createReadStream(path.join(__dirname + "/public/noway_round_regular.otf"));
-      res.writeHead(200, { "Content-Type": "application/x-font-ttf" });
-      fileStream.pipe(res);
-    } else if (req.url.match("public/noway_round_bold.otf")) {
-      var fileStream = fs.createReadStream(path.join(__dirname + "/public/noway_round_bold.otf"));
       res.writeHead(200, { "Content-Type": "application/x-font-ttf" });
       fileStream.pipe(res);
     } else if (req.url.match("public/pop.ttf")) {
@@ -129,7 +164,7 @@ var app = require("http")
         }.bind(res));
     }
   })
-  .listen(process.env.PORT || 8080);
+  .listen(process.env.PORT);
 
 var io = require("socket.io")(app);
 

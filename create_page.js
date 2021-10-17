@@ -5,7 +5,6 @@ module.exports = async (route) => {
             <head>
                 <title>UXMD</title>
                 <meta charset="UTF-8" />
-                <meta http-equiv="Refresh" content="1.5; url='/${route}'" />
                 <link rel="icon" href="public/favicon.svg" />
                 <link rel="stylesheet" href="public/style.css" />
                 <script defer data-domain="uxmd.io" src="https://plausible.io/js/plausible.js"></script>

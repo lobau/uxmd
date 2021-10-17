@@ -1,4 +1,4 @@
-module.exports = async () => {
+module.exports = async (httpCode=404, message="") => {
     return `
         <!DOCTYPE html>
         <html lang="en">
@@ -11,7 +11,7 @@ module.exports = async () => {
                 <script defer data-domain="uxmd.io" src="https://plausible.io/js/plausible.js"></script>
             </head>
             <body>
-                <div id="error_not_found">404<a href="/">Go Back</a></div>
+                <div id="error_not_found">${httpCode} ${message}<a href="/">Go Back</a></div>
             </body>
         </html>`;
 };
