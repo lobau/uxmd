@@ -16,6 +16,7 @@ const getGithubUrl = (state) => {
     client_id: process.env.GITHUB_CLIENT_ID,
     redirect_uri: getGithubRedirectUrl(),
     state: state,
+    scope: "user"
   })
   return `${host}?${query}`
 }

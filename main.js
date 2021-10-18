@@ -16,7 +16,8 @@ const githubStateStrings = {};
 const initPgPool = require("./lib/pg.js")
 const HttpClient = require("./lib/http_client.js")
 const pool = initPgPool()
-const githubClient = new HttpClient("https://github.com")
+const githubClient = new HttpClient("github.com")
+const githubApiClient = new HttpClient("api.github.com")
 
 const generateUnique = (length = 24) => {
   let chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
@@ -27,16 +28,26 @@ const generateUnique = (length = 24) => {
   return str;
 };
 
-// const getAccessTokenPath = (code) => {
-//   const host = "https://github.com/login/oauth/access_token"
-//   const params = {
-//     client_id: process.env.GITHUB_CLIENT_ID,
-//     client_secret: process.env.GITHUB_CLIENT_SECRET,
-//     code: code,
-//     redirect_uri: "http://localhost:8080/github_auth"
-//   }
-//   return `/login/oauth/access_token?${(new URLSearchParams(params)).toString()}`
-// }
+const getAccessTokenPath = (code) => {
+  const params = {
+    client_id: process.env.GITHUB_CLIENT_ID,
+    client_secret: process.env.GITHUB_CLIENT_SECRET,
+    code: code,
+    redirect_uri: "http://localhost:8080/github_auth"
+  }
+  return `/login/oauth/access_token?${(new URLSearchParams(params)).toString()}`
+}
+
+const findOrCreateOAuthUser = async (tokenInfo, userInfo, service) => {
+  const result = await pool.query(`SELECT * FROM oauth_tokens WHERE oauth_user_id = $1`, [userInfo.id])
+  if(result.rows.length > 0) {
+    userId = result.rows[0].user_id
+    const user = await pool.query(`SELECT * FROM users WHERE id = $1`, [userId])
+    return user.rows[0]
+  } else {
+    const user = await pool.query(`INSERT INTO users (name, email) VALUES (userInfo.email`)
+  }
+}
 
 const save = (route) => {
   pool.query("UPDATE Documents SET body = $1 where route = $2;", [db[route], route])
@@ -85,24 +96,18 @@ var app = require("http")
       //       res.end();
       //     }.bind(res));
       // }
-      const code = params.code
-      console.log(params)
+      const authentication = await githubClient.postJson(getAccessTokenPath(params.code), "", {})
+      console.log("=============== AUTHENTICATED", authentication)
+      const userInfo = await githubApiClient.get("/user", {
+        "Authorization": `bearer ${authentication.access_token}`,
+        "User-Agent": "node"
+      })
 
-      // const result = await githubClient.postString(getAccessTokenPath(code), "", {})
-      const accessTokenRequestParams = {
-        client_id: process.env.GITHUB_CLIENT_ID,
-        client_secret: process.env.GITHUB_CLIENT_SECRET,
-        code: code,
-        // redirect_uri: "http://localhost:8080/github_auth"
-      }
-      const result = await githubClient.postFormUrlEncoded("/login/oauth/access_token", accessTokenRequestParams)
-
-      // console.log("=====================")
-      // console.log(result)
-      // console.log("=====================")
+      // const existingUser = findOrCreateOAuthUser(authentication, userInfo, "github")
+      // pool.query("INSERT INTO oauth_tokens")
 
       res.writeHead(200, { "Content-Type": "text/html" });
-      res.write("It worked.");
+      res.write("It worked.\n" + JSON.stringify(authentication) + "<br/></br>" + JSON.stringify(userInfo) );
       res.end();
     } else if (req.url.match("public/stolen_victory_duospace_regular.ttf")) {
       var fileStream = fs.createReadStream(path.join(__dirname + "/public/stolen_victory_duospace_regular.ttf"));
