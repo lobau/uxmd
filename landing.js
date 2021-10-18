@@ -21,6 +21,24 @@ const getGithubUrl = (state) => {
   return `${host}?${query}`
 }
 
+const renderLoginOrDashboard = (state) => {
+  return `<script>
+    const session = localStorage.getItem("__uxmd_session")
+    const parent = document.getElementById("contents")
+    if(session) {
+      const page = document.createElement("div")
+      page.innerHTML = "Have session"
+      parent.appendChild(page)
+    } else {
+      const page = document.createElement("a")
+      page.setAttribute("href", "${getGithubUrl(state)}")
+      page.innerHTML = "Login with GitHub"
+      parent.appendChild(page)
+    }
+  </script>`
+
+}
+
 module.exports = async (state) => {
   return `
     <!DOCTYPE html>
@@ -45,7 +63,7 @@ module.exports = async (state) => {
             </g>
           </svg>
           <div id="contents"/>
-          <a href=${getGithubUrl(state)}>Login with GitHub</a>
+          ${renderLoginOrDashboard(state)}
         </div>
       </body>
     </html>

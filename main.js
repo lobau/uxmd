@@ -7,6 +7,7 @@ const render_route = require("./render_route.js");
 const error_page = require("./error_page.js");
 const create_page = require("./create_page.js");
 const landing = require("./landing.js");
+const user_from_oauth = require("./user_from_oauth.js");
 
 const db = {};
 const autosave = {};
@@ -103,7 +104,6 @@ var app = require("http")
       })
       // TODO: create user, oauth_token, session - should happen in a transaction
       const user = await findOrCreateOAuthUser(authentication, JSON.parse(userInfo), "github")
-      console.log(user)
 
       await pool.query(`
         INSERT INTO oauth_tokens
@@ -116,10 +116,14 @@ var app = require("http")
            (user_id, secret) VALUES ($1, $2)
          RETURNING *
       `, [parseInt(user.id), generateUnique(64)])
-
-      res.writeHead(200, { "Content-Type": "text/html" });
-      res.write("It worked.\n" + JSON.stringify(authentication) + "<br/></br>" + JSON.stringify(userInfo) + "<br/></br>" + JSON.stringify(sessionInsert.rows[0]) );
-      res.end();
+      const session = sessionInsert.rows[0]
+      user_from_oauth(session.user_id, session.secret).then(
+        function (html) {
+          res.writeHead(200, { "Content-Type": "text/html" });
+          res.write(html);
+          res.end();
+        }
+      );
     } else if (req.url.match("public/stolen_victory_duospace_regular.ttf")) {
       var fileStream = fs.createReadStream(path.join(__dirname + "/public/stolen_victory_duospace_regular.ttf"));
       res.writeHead(200, { "Content-Type": "application/x-font-ttf" });
