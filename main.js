@@ -27,12 +27,23 @@ const generateUnique = (length = 24) => {
   return str;
 };
 
+// const getAccessTokenPath = (code) => {
+//   const host = "https://github.com/login/oauth/access_token"
+//   const params = {
+//     client_id: process.env.GITHUB_CLIENT_ID,
+//     client_secret: process.env.GITHUB_CLIENT_SECRET,
+//     code: code,
+//     redirect_uri: "http://localhost:8080/github_auth"
+//   }
+//   return `/login/oauth/access_token?${(new URLSearchParams(params)).toString()}`
+// }
+
 const save = (route) => {
   pool.query("UPDATE Documents SET body = $1 where route = $2;", [db[route], route])
-        .then(() => {
-          console.log("Row updated successfully");
-        })
-        .catch((e) => console.error(e.stack));
+    .then(() => {
+      console.log("Row updated successfully");
+    })
+    .catch((e) => console.error(e.stack));
 };
 
 var app = require("http")
@@ -76,11 +87,15 @@ var app = require("http")
       // }
       const code = params.code
       console.log(params)
-      const result = await githubClient.getJson("/login/oauth/access_token", {
-        code,
+
+      // const result = await githubClient.postString(getAccessTokenPath(code), "", {})
+      const accessTokenRequestParams = {
         client_id: process.env.GITHUB_CLIENT_ID,
-        client_secret: process.env.GITHUB_CLIENT_SECRET
-      })
+        client_secret: process.env.GITHUB_CLIENT_SECRET,
+        code: code,
+        // redirect_uri: "http://localhost:8080/github_auth"
+      }
+      const result = await githubClient.postFormUrlEncoded("/login/oauth/access_token", accessTokenRequestParams)
 
       // console.log("=====================")
       // console.log(result)
