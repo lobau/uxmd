@@ -2,8 +2,8 @@ require("dotenv").config();
 const initPgPool = require("../lib/pg.js");
 const pool = initPgPool();
 
-const createTables = () => {
-	pool.query(`
+const createTables = async () => {
+	await pool.query(`
 		CREATE TABLE IF NOT EXISTS documents(
 			id BIGSERIAL PRIMARY KEY,
 			route VARCHAR,
@@ -11,43 +11,55 @@ const createTables = () => {
 			body VARCHAR
 		);
 	`)
-	pool.query(`
-		CREATE INDEX IF NOT EXISTS ON documents (route);
+	await pool.query(`
+		CREATE INDEX ON documents (route);
 	`);
-	pool.query(`
+	await pool.query(`
 		CREATE TABLE IF NOT EXISTS users(
 			id BIGSERIAL PRIMARY KEY,
 			name VARCHAR,
 			email VARCHAR
 		);
 	`);
-	pool.query(`
-		CREATE INDEX IF NOT EXISTS ON users (email);
+	await pool.query(`
+		CREATE INDEX ON users (email);
 	`);
-	pool.query(`
+	await pool.query(`
+		CREATE TABLE IF NOT EXISTS sessions(
+			id BIGSERIAL PRIMARY KEY,
+			user_id BIGINT,
+			secret VARCHAR
+		);
+	`);
+	await pool.query(`
+		CREATE INDEX ON sessions (user_id);
+	`);
+	await pool.query(`
 		CREATE TABLE IF NOT EXISTS oauth_tokens(
 			id BIGSERIAL PRIMARY KEY,
 			user_id bigint,
-			oauth_user_id VARCHAR,
 			oauth_provider VARCHAR,
 			access_token VARCHAR,
-			refresh_token VARCHAR,
+			refresh_token VARCHAR
 		);
 	`);
-	pool.query(`
-		CREATE INDEX IF NOT EXISTS ON oauth_tokens (user_id);
+	await pool.query(`
+		CREATE INDEX ON oauth_tokens (user_id);
 	`);
-	pool.query(`
-		CREATE INDEX IF NOT EXISTS ON oauth_tokens (oauth_user_id);
+	await pool.query(`
+		CREATE INDEX ON oauth_tokens (oauth_provider);
 	`);
-	pool.query(`
-		CREATE INDEX IF NOT EXISTS ON oauth_tokens (oauth_provider);
-	`);
-	pool.query(`
-		CREATE INDEX IF NOT EXISTS ON oauth_tokens (email);
+	await pool.query(`
+		CREATE TABLE IF NOT EXISTS oauth_ids_to_user_ids(
+			user_id bigint,
+			oauth_id VARCHAR,
+			service VARCHAR,
+			PRIMARY KEY (user_id, oauth_id, service)
+		);
 	`);
 };
 
-createTables();
-console.log("Done.")
-process.exit(1)
+createTables().then(() => {
+	console.log("Done.")
+	process.exit(1)
+});

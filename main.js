@@ -12,7 +12,6 @@ const db = {};
 const autosave = {};
 const githubStateStrings = {};
 
-
 const initPgPool = require("./lib/pg.js")
 const HttpClient = require("./lib/http_client.js")
 const pool = initPgPool()
@@ -39,13 +38,14 @@ const getAccessTokenPath = (code) => {
 }
 
 const findOrCreateOAuthUser = async (tokenInfo, userInfo, service) => {
-  const result = await pool.query(`SELECT * FROM oauth_tokens WHERE oauth_user_id = $1`, [userInfo.id])
-  if(result.rows.length > 0) {
-    userId = result.rows[0].user_id
-    const user = await pool.query(`SELECT * FROM users WHERE id = $1`, [userId])
-    return user.rows[0]
+  const existingEntries = await pool.query(`SELECT * FROM oauth_ids_to_user_ids WHERE oauth_id = $1`, [userInfo.id])
+  if(existingEntries.rows.length > 0) {
+    userId = existingEntries.rows[0].user_id
+    const users = await pool.query(`SELECT * FROM users WHERE id = $1`, [userId])
+    return users.rows[0]
   } else {
-    const user = await pool.query(`INSERT INTO users (name, email) VALUES (userInfo.email`)
+    const users = await pool.query(`INSERT INTO users (name, email) VALUES ($1, $2) RETURNING *`, [userInfo.name, userInfo.email])
+    return users.rows[0]
   }
 }
 
@@ -87,7 +87,7 @@ var app = require("http")
         }.bind(res));
     } else if(req.url.includes("/github_auth?")) {
       const params = querystring.parse(req.url.split("/github_auth?")[1])
-      // github state didn't work for us
+      // TODO: github state didn't work for us
       // if(!githubStateStrings[params.state]) {
       //   return error_page(400).then(
       //     function (html) {
@@ -97,17 +97,28 @@ var app = require("http")
       //     }.bind(res));
       // }
       const authentication = await githubClient.postJson(getAccessTokenPath(params.code), "", {})
-      console.log("=============== AUTHENTICATED", authentication)
       const userInfo = await githubApiClient.get("/user", {
         "Authorization": `bearer ${authentication.access_token}`,
         "User-Agent": "node"
       })
+      // TODO: create user, oauth_token, session - should happen in a transaction
+      const user = await findOrCreateOAuthUser(authentication, JSON.parse(userInfo), "github")
+      console.log(user)
 
-      // const existingUser = findOrCreateOAuthUser(authentication, userInfo, "github")
-      // pool.query("INSERT INTO oauth_tokens")
+      await pool.query(`
+        INSERT INTO oauth_tokens
+          (user_id, oauth_provider, access_token)
+        VALUES
+         ($1, $2, $3)`,
+        [user.id, "github", authentication.access_token])
+      const sessionInsert = await pool.query(`
+         INSERT INTO sessions
+           (user_id, secret) VALUES ($1, $2)
+         RETURNING *
+      `, [parseInt(user.id), generateUnique(64)])
 
       res.writeHead(200, { "Content-Type": "text/html" });
-      res.write("It worked.\n" + JSON.stringify(authentication) + "<br/></br>" + JSON.stringify(userInfo) );
+      res.write("It worked.\n" + JSON.stringify(authentication) + "<br/></br>" + JSON.stringify(userInfo) + "<br/></br>" + JSON.stringify(sessionInsert.rows[0]) );
       res.end();
     } else if (req.url.match("public/stolen_victory_duospace_regular.ttf")) {
       var fileStream = fs.createReadStream(path.join(__dirname + "/public/stolen_victory_duospace_regular.ttf"));
