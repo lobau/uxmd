@@ -1,24 +1,23 @@
 const fs = require("fs");
 const path = require("path");
-const { Pool } = require("pg");
+const querystring = require("querystring")
 require("dotenv").config();
 
 const render_route = require("./render_route.js");
 const error_page = require("./error_page.js");
 const create_page = require("./create_page.js");
+const landing = require("./landing.js");
+const user_from_oauth = require("./user_from_oauth.js");
 
-var db = {};
-var autosave = {};
+const db = {};
+const autosave = {};
+const githubStateStrings = {};
 
-const isProduction = process.env.NODE_ENV === "production";
-const connectionString = `postgresql://${process.env.PG_USER}:${process.env.PG_PASSWORD}@${process.env.PG_HOST}:${process.env.PG_PORT}/${process.env.PG_DATABASE}`;
-
-const pool = new Pool({
-  connectionString: isProduction ? process.env.DATABASE_URL : connectionString,
-  ssl: {
-      rejectUnauthorized: false,
-  },
-});
+const initPgPool = require("./lib/pg.js")
+const HttpClient = require("./lib/http_client.js")
+const pool = initPgPool()
+const githubClient = new HttpClient("github.com")
+const githubApiClient = new HttpClient("api.github.com")
 
 const generateUnique = (length = 24) => {
   let chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
@@ -29,21 +28,43 @@ const generateUnique = (length = 24) => {
   return str;
 };
 
+const getAccessTokenPath = (code) => {
+  const params = {
+    client_id: process.env.GITHUB_CLIENT_ID,
+    client_secret: process.env.GITHUB_CLIENT_SECRET,
+    code: code,
+    redirect_uri: "http://localhost:8080/github_auth"
+  }
+  return `/login/oauth/access_token?${(new URLSearchParams(params)).toString()}`
+}
+
+const findOrCreateOAuthUser = async (tokenInfo, userInfo, service) => {
+  const existingEntries = await pool.query(`SELECT * FROM oauth_ids_to_user_ids WHERE oauth_id = $1`, [userInfo.id])
+  if(existingEntries.rows.length > 0) {
+    userId = existingEntries.rows[0].user_id
+    const users = await pool.query(`SELECT * FROM users WHERE id = $1`, [userId])
+    return users.rows[0]
+  } else {
+    const users = await pool.query(`INSERT INTO users (name, email) VALUES ($1, $2) RETURNING *`, [userInfo.name, userInfo.email])
+    return users.rows[0]
+  }
+}
+
 const save = (route) => {
   pool.query("UPDATE Documents SET body = $1 where route = $2;", [db[route], route])
-        .then(() => {
-          console.log("Row updated successfully");
-        })
-        .catch((e) => console.error(e.stack));
+    .then(() => {
+      console.log("Row updated successfully");
+    })
+    .catch((e) => console.error(e.stack));
 };
 
 var app = require("http")
-  .createServer(function (req, res) {
-    if (req.url === "/") {
+  .createServer(async function (req, res) {
+    if (req.url === "/create") {
       let route = generateUnique();
       pool
         .query(
-          `INSERT INTO Documents(route,body) Values('${route}','/root\n# Hello\nThis is the first state\n[Go to next state](#next)\n\n/next\n# Next state\nThis is the next state!\n[Back](#root)');`
+          `INSERT INTO Documents(route,body) VALUES('${route}','/root\n# Hello\nThis is the first state\n[Go to next state](#next)\n\n/next\n# Next state\nThis is the next state!\n[Back](#root)');`
         )
         .then(() => {
           create_page(route).then(
@@ -54,20 +75,61 @@ var app = require("http")
             }.bind(res));
         })
         .catch((e) => console.error(e.stack));
+    } else if(req.url === "/") {
+      /* state for OAuth, see https://docs.github.com/en/developers/apps/building-oauth-apps/authorizing-oauth-apps*/
+      const state = generateUnique()
+      githubStateStrings[state] = true
+      setTimeout(() => (delete githubStateStrings[state]), 1800000)
+      landing(state).then(
+        function (html) {
+          res.writeHead(200, { "Content-Type": "text/html" });
+          res.write(html);
+          res.end();
+        }.bind(res));
+    } else if(req.url.includes("/github_auth?")) {
+      const params = querystring.parse(req.url.split("/github_auth?")[1])
+      // TODO: github state didn't work for us
+      // if(!githubStateStrings[params.state]) {
+      //   return error_page(400).then(
+      //     function (html) {
+      //       res.writeHead(400, { "Content-Type": "text/html" });
+      //       res.write(html);
+      //       res.end();
+      //     }.bind(res));
+      // }
+      const authentication = await githubClient.postJson(getAccessTokenPath(params.code), "", {})
+      const userInfo = await githubApiClient.get("/user", {
+        "Authorization": `bearer ${authentication.access_token}`,
+        "User-Agent": "node"
+      })
+      // TODO: create user, oauth_token, session - should happen in a transaction
+      const user = await findOrCreateOAuthUser(authentication, JSON.parse(userInfo), "github")
+
+      await pool.query(`
+        INSERT INTO oauth_tokens
+          (user_id, oauth_provider, access_token)
+        VALUES
+         ($1, $2, $3)`,
+        [user.id, "github", authentication.access_token])
+      const sessionInsert = await pool.query(`
+         INSERT INTO sessions
+           (user_id, secret) VALUES ($1, $2)
+         RETURNING *
+      `, [parseInt(user.id), generateUnique(64)])
+      const session = sessionInsert.rows[0]
+      user_from_oauth(session.user_id, session.secret).then(
+        function (html) {
+          res.writeHead(200, { "Content-Type": "text/html" });
+          res.write(html);
+          res.end();
+        }
+      );
     } else if (req.url.match("public/stolen_victory_duospace_regular.ttf")) {
       var fileStream = fs.createReadStream(path.join(__dirname + "/public/stolen_victory_duospace_regular.ttf"));
       res.writeHead(200, { "Content-Type": "application/x-font-ttf" });
       fileStream.pipe(res);
     } else if (req.url.match("public/stolen_victory_duospace_bold.ttf")) {
       var fileStream = fs.createReadStream(path.join(__dirname + "/public/stolen_victory_duospace_bold.ttf"));
-      res.writeHead(200, { "Content-Type": "application/x-font-ttf" });
-      fileStream.pipe(res);
-    } else if (req.url.match("public/noway_round_regular.otf")) {
-      var fileStream = fs.createReadStream(path.join(__dirname + "/public/noway_round_regular.otf"));
-      res.writeHead(200, { "Content-Type": "application/x-font-ttf" });
-      fileStream.pipe(res);
-    } else if (req.url.match("public/noway_round_bold.otf")) {
-      var fileStream = fs.createReadStream(path.join(__dirname + "/public/noway_round_bold.otf"));
       res.writeHead(200, { "Content-Type": "application/x-font-ttf" });
       fileStream.pipe(res);
     } else if (req.url.match("public/pop.ttf")) {
@@ -137,7 +199,7 @@ var app = require("http")
         }.bind(res));
     }
   })
-  .listen(process.env.PORT || 8080);
+  .listen(process.env.PORT);
 
 var io = require("socket.io")(app);
 

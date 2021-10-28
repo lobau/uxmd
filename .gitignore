@@ -2,3 +2,4 @@
 .env
 node_modules/
 files/
+dev_notes.txt
