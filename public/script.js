@@ -16,7 +16,7 @@ const render = () => {
     let lines = uxdata[i].split(/\r?\n/);
     let slug = lines.shift();
     let body = lines.join("\n");
-    let bodyHtml = marked(body);
+    let bodyHtml = marked.parse(body);
     data[slug] = bodyHtml;
   }
 
@@ -88,7 +88,6 @@ window.onload = () => {
 
   window.currentRoute = "root";
 
-  // console.log(window.currentRoute);
   render();
 
 };

@@ -7,17 +7,19 @@ module.exports = async (route, body) => {
           <meta charset="UTF-8" />
           <link rel="icon" href="public/favicon.svg" />
 
+          <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+
           <script src="https://cdn.jsdelivr.net/npm/codemirror@5.63.1/lib/codemirror.min.js"></script>
           <script src="https://cdn.jsdelivr.net/combine/npm/codemirror@5.63.1,npm/codemirror@5.63.1/mode/markdown/markdown.min.js"></script>
 
           <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/codemirror@5.63.1/lib/codemirror.min.css" />
 
+          
           <script src="/socket.io/socket.io.js"></script>
           <script type="text/javascript">
             var socket = io.connect('', {query: 'name=${route}'});
           </script>
 
-          <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
           <script src="public/script.js"></script>
           <link rel="stylesheet" href="public/style.css" />
           <link rel="stylesheet" href="public/syntax.css" />

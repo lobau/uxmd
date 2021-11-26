@@ -62,14 +62,6 @@ var app = require("http")
       var fileStream = fs.createReadStream(path.join(__dirname + "/public/stolen_victory_duospace_bold.ttf"));
       res.writeHead(200, { "Content-Type": "application/x-font-ttf" });
       fileStream.pipe(res);
-    } else if (req.url.match("public/noway_round_regular.otf")) {
-      var fileStream = fs.createReadStream(path.join(__dirname + "/public/noway_round_regular.otf"));
-      res.writeHead(200, { "Content-Type": "application/x-font-ttf" });
-      fileStream.pipe(res);
-    } else if (req.url.match("public/noway_round_bold.otf")) {
-      var fileStream = fs.createReadStream(path.join(__dirname + "/public/noway_round_bold.otf"));
-      res.writeHead(200, { "Content-Type": "application/x-font-ttf" });
-      fileStream.pipe(res);
     } else if (req.url.match("public/pop.ttf")) {
       var fileStream = fs.createReadStream(path.join(__dirname + "/public/pop.ttf"));
       res.writeHead(200, { "Content-Type": "application/x-font-ttf" });
